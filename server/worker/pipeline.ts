@@ -1,4 +1,4 @@
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { pool, withTransaction, rowSnapshot } from "../db.js";
 import { sellerSchema } from "../../shared/contracts.js";
 import { scoreOpportunity } from "../../shared/scoring.js";
@@ -7,6 +7,7 @@ import { compareSnapshots } from "../../shared/triggers.js";
 import { researchWebsite } from "../research/safe-fetch.js";
 import { demoResearch } from "../research/demo.js";
 import { analyzeCompany } from "../research/providers.js";
+import { actionFingerprint } from "./fingerprint.js";
 export async function processJob(job: any) {
   const company = (
     await pool.query(
@@ -34,18 +35,19 @@ export async function processJob(job: any) {
       job.mode === "demo"
         ? demoResearch(company.website, previous ? 1 : 0)
         : await researchWebsite(company.website);
-    await pool.query(
-      "UPDATE jobs SET sources=$1,updated_at=now() WHERE id=$2 AND status='running' AND worker_id=$3",
+  }
+  await withTransaction(async (c) => {
+    const retained = await c.query(
+      "UPDATE jobs SET sources=$1,updated_at=now() WHERE id=$2 AND status='running' AND worker_id=$3 AND lease_until>now() RETURNING id",
       [JSON.stringify(sources), job.id, job.worker_id],
     );
-    await withTransaction(async (c) => {
-      for (const source of sources)
-        await c.query(
-          "INSERT INTO sources(id,workspace_id,company_id,job_id,data) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
-          [source.id, job.workspace_id, company.id, job.id, source],
-        );
-    });
-  }
+    if (!retained.rowCount) throw new Error("JOB_LEASE_LOST");
+    for (const source of sources)
+      await c.query(
+        "INSERT INTO sources(id,workspace_id,company_id,job_id,data) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
+        [source.id, job.workspace_id, company.id, job.id, source],
+      );
+  });
   const { analysis, usage } = await analyzeCompany(sources, seller, job.mode);
   const resolutions = resolveClaims(analysis.claims, sources);
   const assessment = scoreOpportunity(analysis, !!seller.offering.trim());
@@ -60,17 +62,7 @@ export async function processJob(job: any) {
     analysis,
     createdAt,
   });
-  const fingerprint = createHash("sha256")
-    .update(
-      JSON.stringify({
-        needs: analysis.needs.map((n) => n.text).sort(),
-        developments: analysis.developments
-          .map((d) => d.kind + ":" + d.text)
-          .sort(),
-        approach: analysis.approach,
-      }),
-    )
-    .digest("hex");
+  const fingerprint = actionFingerprint(company.id, sources);
   await withTransaction(async (c) => {
     const current = (
       await c.query("SELECT * FROM jobs WHERE id=$1 FOR UPDATE", [job.id])

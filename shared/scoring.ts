@@ -43,6 +43,7 @@ export function scoreOpportunity(
     : 0;
   const qualified =
     configured &&
+    analysis.components.fit.value > 0 &&
     score >= 55 &&
     confidence >= 65 &&
     missing.length === 0 &&
@@ -60,6 +61,9 @@ export function scoreOpportunity(
       ...missing,
       ...(confidence < 65 ? ["Evidence confidence is below 65%."] : []),
       ...(score < 55 ? ["Opportunity score is below 55."] : []),
+      ...(analysis.components.fit.value === 0
+        ? ["Zero seller fit or a seller disqualifier excludes this company."]
+        : []),
     ],
   };
 }

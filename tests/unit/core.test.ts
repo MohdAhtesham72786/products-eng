@@ -56,6 +56,14 @@ const analysis = {
   approach: "Discuss automation",
 };
 describe("opportunity policy", () => {
+  it("does not qualify zero-fit or disqualified companies despite high other components", () => {
+    const a = structuredClone(analysis);
+    a.components.fit.value = 0;
+    for (const k of ["need", "timing", "approachability"] as const)
+      a.components[k].value = 100;
+    expect(scoreOpportunity(a as any, true).score).toBe(65);
+    expect(scoreOpportunity(a as any, true).qualified).toBe(false);
+  });
   it("uses weighted components and keeps confidence separate", () => {
     const r = scoreOpportunity(analysis as any, true);
     expect(r.score).toBe(74);
@@ -111,6 +119,14 @@ describe("opportunity policy", () => {
   });
 });
 describe("source reliability", () => {
+  it("does not conceal equally credible conflicts behind duplicate agreeing claims", () => {
+    const r = resolveClaims(
+      [claim, { ...claim }, { ...claim, value: "retail" }],
+      [source],
+    );
+    expect(r[0].status).toBe("unresolved_conflict");
+    expect(r[0].selected).toBeNull();
+  });
   it("retains conflicting alternatives while preferring primary evidence", () => {
     const r = resolveClaims(
       [
@@ -180,6 +196,12 @@ describe("historical changes", () => {
   });
 });
 describe("research security and evidence", () => {
+  it("limits a headerless batch to twenty distinct company websites", () =>
+    expect(() =>
+      parseBatch(
+        Array.from({ length: 21 }, (_, i) => `company-${i}.com`).join("\n"),
+      ),
+    ).toThrow());
   it.each([
     "127.0.0.1",
     "10.1.2.3",

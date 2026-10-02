@@ -57,6 +57,23 @@ test("complete demo workflow from signup to shortlist and contextual outreach", 
       "New expansion evidence may create an opening for the configured offering.",
     ),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Research again" }).click();
+  await expect(
+    page.getByLabel("Before snapshot").locator("option"),
+  ).toHaveCount(4, { timeout: 60000 });
+  const oldest = (await page
+    .getByLabel("Before snapshot")
+    .locator("option")
+    .last()
+    .getAttribute("value"))!;
+  await page.getByLabel("Before snapshot").selectOption(oldest);
+  await page.waitForResponse(
+    (r) =>
+      r.url().includes("/api/companies/") &&
+      !r.url().includes("/compare") &&
+      r.request().method() === "GET",
+  );
+  await expect(page.getByLabel("Before snapshot")).toHaveValue(oldest);
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await page
     .locator(".action-card")
@@ -75,6 +92,18 @@ test("complete demo workflow from signup to shortlist and contextual outreach", 
   await page.getByRole("button", { name: "Save settings" }).click();
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(page.locator(".action-card")).toHaveCount(3);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Companies", exact: true }).click();
+  await expect(page.getByLabel("Company websites")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Welcome back." }),
+  ).toBeVisible();
 });
 test("mobile navigation and sign-in errors are accessible", async ({
   page,

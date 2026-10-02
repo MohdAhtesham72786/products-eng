@@ -120,7 +120,7 @@ Migrations are transactional and serialized with a PostgreSQL advisory lock. Kee
 
 ## Product decisions and limits
 
-- Scores are deterministic weighted arithmetic; AI supplies evidence-backed component assessments. Confidence is separate. The default threshold is score 55 and confidence 65%, with evidence for all four components.
+- Scores are deterministic weighted arithmetic; AI supplies evidence-backed component assessments. Confidence is separate. The default threshold is score 55 and confidence 65%, with evidence for all four components. Zero seller fit excludes a company even when other components are strong.
 - Buyer personas are recommendations. A named person requires their name and role in cited public text. Email addresses are never guessed.
 - A first snapshot cannot establish historical change. Event dates remain unknown unless the source explicitly contains the date.
 - Conflicts remain visible, including when a selected value is withheld. Missing headcount/revenue is displayed as unknown.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api, date } from "../api";
 import { Sources, Score, DemoBadge, Empty } from "../components/Primitives";
 import type { Source, Snapshot } from "../../shared/contracts";
@@ -29,13 +29,23 @@ export default function Dossier({
     [draft, setDraft] = useState<any>(null),
     [channel, setChannel] = useState("email"),
     [page, setPage] = useState(1);
+  const selectedByUser = useRef(false),
+    snapshotCache = useRef(new Map<string, Snapshot>());
+  const [snapshotOptions, setSnapshotOptions] = useState<Snapshot[]>([]);
   async function load() {
     try {
       const result = await api<Data>(`/companies/${id}?page=${page}`);
       setData(result);
-      if (!before && result.snapshots.length > 1)
-        setBefore(result.snapshots[1].id);
-      if (!after && result.snapshots.length) setAfter(result.snapshots[0].id);
+      for (const snapshot of result.snapshots)
+        snapshotCache.current.set(snapshot.id, snapshot);
+      const options = [...snapshotCache.current.values()].sort(
+        (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+      );
+      setSnapshotOptions(options);
+      if (!selectedByUser.current) {
+        setBefore(options[1]?.id || "");
+        setAfter(options[0]?.id || "");
+      }
       setDraft((d: any) => d || result.drafts[0] || null);
     } catch (e) {
       setError((e as Error).message);
@@ -157,6 +167,12 @@ export default function Dossier({
             <div>
               <section className="panel">
                 <h2>Who to approach</h2>
+                <p className="muted">
+                  Buyer recommendation confidence:{" "}
+                  {s.analysis.contact.confidence === undefined
+                    ? "unknown"
+                    : s.analysis.contact.confidence + "%"}
+                </p>
                 <span className="badge">
                   {s.analysis.contact.kind === "persona"
                     ? "Suggested buyer persona"
@@ -278,10 +294,13 @@ export default function Dossier({
               Before snapshot
               <select
                 value={before}
-                onChange={(e) => setBefore(e.target.value)}
+                onChange={(e) => {
+                  selectedByUser.current = true;
+                  setBefore(e.target.value);
+                }}
               >
                 <option value="">Select older snapshot</option>
-                {data!.snapshots.map((s) => (
+                {snapshotOptions.map((s) => (
                   <option value={s.id} key={s.id}>
                     {date(s.createdAt)}
                   </option>
@@ -290,9 +309,15 @@ export default function Dossier({
             </label>
             <label>
               After snapshot
-              <select value={after} onChange={(e) => setAfter(e.target.value)}>
+              <select
+                value={after}
+                onChange={(e) => {
+                  selectedByUser.current = true;
+                  setAfter(e.target.value);
+                }}
+              >
                 <option value="">Select newer snapshot</option>
-                {data!.snapshots.map((s) => (
+                {snapshotOptions.map((s) => (
                   <option value={s.id} key={s.id}>
                     {date(s.createdAt)}
                   </option>
@@ -339,7 +364,7 @@ export default function Dossier({
                         <h4>Before evidence</h4>
                         {t.beforeSourceIds.length ? (
                           <Sources
-                            sources={data!.sources}
+                            sources={comparison.sources || data!.sources}
                             ids={t.beforeSourceIds}
                           />
                         ) : (
@@ -352,7 +377,7 @@ export default function Dossier({
                       <div>
                         <h4>After evidence</h4>
                         <Sources
-                          sources={data!.sources}
+                          sources={comparison.sources || data!.sources}
                           ids={t.afterSourceIds}
                         />
                       </div>
@@ -377,8 +402,6 @@ export default function Dossier({
               disabled={page === 1}
               onClick={() => {
                 setPage(page - 1);
-                setBefore("");
-                setAfter("");
                 setComparison(null);
               }}
             >
@@ -391,8 +414,6 @@ export default function Dossier({
               disabled={page * 20 >= data!.totalSnapshots}
               onClick={() => {
                 setPage(page + 1);
-                setBefore("");
-                setAfter("");
                 setComparison(null);
               }}
             >

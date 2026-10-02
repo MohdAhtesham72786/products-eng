@@ -126,6 +126,16 @@ export default function App() {
             <strong>{view === "Dossier" ? "Company dossier" : view}</strong>
           </span>
           <span className="topbar-label">FOCUS ON THE NEXT RIGHT MOVE</span>
+          <button
+            className="mobile-signout"
+            onClick={async () => {
+              await api("/auth/logout", "POST");
+              setUser(null);
+              navigate("Today");
+            }}
+          >
+            Sign out
+          </button>
         </header>
         <main>
           {view === "Today" ? (

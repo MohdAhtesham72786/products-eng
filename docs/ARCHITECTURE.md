@@ -16,7 +16,7 @@ The API serves the built frontend. A separate process uses the same backend modu
 6. Validate factual values/excerpts and references, preserve conflict alternatives, compute deterministic weighted scoring and confidence, and compare developments to the prior snapshot.
 7. Lock the current job and verify ownership/lease/cancellation before committing snapshots, claim/contact/trigger records, actions, AI usage, audit event, and job success.
 
-Failed attempts retry up to three times, with a ten-second queue delay. Explicit retries add three allowed attempts and retain research. Expired leases are reclaimed; exhausted jobs fail. Snapshot uniqueness by job and action uniqueness by company/fingerprint prevent duplicate results. A repeated unchanged recommendation preserves its lifecycle; it does not reopen a completed action.
+Failed attempts retry up to three times, with a ten-second queue delay. Explicit retries add three allowed attempts and retain research. Expired leases are reclaimed; exhausted jobs fail. A transaction-level advisory lock caps globally active leased jobs at three. Snapshot uniqueness by job and action uniqueness by company/fingerprint prevent duplicate results. Fingerprints derive from normalized source evidence and company identity, excluding source IDs/timestamps and generated needs/approach prose. A repeated unchanged recommendation preserves its lifecycle; it does not reopen a completed action. Retained payloads and source rows commit together, with idempotent repair of retained rows during recovery.
 
 ## Ranking
 

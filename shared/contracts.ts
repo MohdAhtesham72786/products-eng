@@ -65,6 +65,7 @@ export const analysisSchema = z.object({
     role: text,
     reason: text,
     sourceIds: refs,
+    confidence: z.number().min(0).max(100).optional(),
   }),
   components: z.object({
     fit: component,

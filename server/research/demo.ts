@@ -128,6 +128,7 @@ export function demoAnalysis(
       },
     ],
     contact: {
+      confidence: 60,
       kind: "persona",
       name: null,
       role: seller.personas[0] || "Operations lead",

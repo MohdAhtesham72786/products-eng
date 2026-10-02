@@ -152,9 +152,18 @@ companiesRouter.get("/:id/compare", async (req, res) => {
       "INVALID_COMPARISON",
       "Before must be older than after.",
     );
+  const evidence = await pool.query(
+    "SELECT data FROM sources WHERE workspace_id=$1 AND job_id IN ($2,$3)",
+    [
+      req.identity.workspaceId,
+      snapshots.rows.find((s) => s.id === before).job_id,
+      snapshots.rows.find((s) => s.id === after).job_id,
+    ],
+  );
   res.json({
     before: b,
     after: a,
+    sources: evidence.rows.map((s) => s.data),
     triggers: compareSnapshots(b, a),
     note: "Formatting and unchanged developments are ignored. Event dates remain unknown unless sourced.",
   });

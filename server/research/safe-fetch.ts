@@ -59,6 +59,7 @@ export function parseBatch(input: string) {
       });
     }
   });
+  if (urls.length > 20) throw new Error("BATCH_TOO_LARGE");
   return { urls, errors, duplicates };
 }
 export async function resolvePublic(host: string) {

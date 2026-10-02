@@ -13,10 +13,25 @@ export function resolveClaims(
       0,
       ...s.map((s) => Date.parse(s.publishedAt || s.retrievedAt)),
     );
-    return primary + Math.min(20, s.length * 5) + newest / 1e13;
+    const independentPublishers = new Set(
+      s.map((source) => source.publisher.toLowerCase()),
+    );
+    return (
+      primary + Math.min(20, independentPublishers.size * 5) + newest / 1e13
+    );
   };
   return [...groups].map(([field, alternatives]) => {
-    const ranked = [...alternatives].sort((a, b) => quality(b) - quality(a));
+    const distinctValues = new Map<string, Claim[]>();
+    for (const claim of alternatives) {
+      const key = claim.value.toLowerCase().trim();
+      distinctValues.set(key, [...(distinctValues.get(key) || []), claim]);
+    }
+    const ranked = [...distinctValues.values()]
+      .map((matching) => ({
+        ...matching.sort((a, b) => quality(b) - quality(a))[0],
+        sourceIds: [...new Set(matching.flatMap((c) => c.sourceIds))],
+      }))
+      .sort((a, b) => quality(b) - quality(a));
     const values = new Set(ranked.map((c) => c.value.toLowerCase().trim()));
     const unresolved =
       values.size > 1 &&

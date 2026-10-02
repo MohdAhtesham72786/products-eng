@@ -1096,3 +1096,13 @@ ul {
     font-size: 18px;
   }
 }
+.mobile-signout {
+  display: none;
+}
+@media (max-width: 760px) {
+  .mobile-signout {
+    display: block;
+    padding: 5px 9px;
+    font-size: 10px;
+  }
+}
