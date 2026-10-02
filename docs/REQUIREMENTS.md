@@ -1,0 +1,21 @@
+# Coverage of the nine candidate tasks
+
+| Task                            | Implementation                                                                                                                               | Verification                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1. Company intelligence         | Safe homepage/about/careers research, structured dossier, exact sourced claim excerpts, unknown fields, provenance                           | core/boundary tests; PostgreSQL pipeline; browser dossier/evidence                                                     |
+| 2. Opportunity scoring          | Seller-aware component analysis, deterministic 35/25/25/15 weights, separate confidence, batch import/dedup/validation                       | core score/batch tests; demo seller-context tests; integration batch and shortlist                                     |
+| 3. Right person                 | Grounded named contact or explicitly suggested buyer persona with rationale; no guessed emails                                               | role/name grounding tests; browser buyer/dossier view                                                                  |
+| 4. Personalized outreach        | Seller/company/contact-grounded email or network draft, style, editing, regeneration, copying and persisted versions                         | demo draft tests; integration draft/edit/isolation; browser edit/reload                                                |
+| 5. Automation                   | Durable input → public evidence → AI → validated structure → PostgreSQL worker pipeline                                                      | real PostgreSQL workflow, competing claims/lease recovery, failure/retry/source retention, cancellation and uniqueness |
+| 6. Trigger detection            | Immutable snapshots, arbitrary ordered comparison, meaningful categories, source-linked before/after, observation/event-date distinction     | core changes/noise tests; integration two snapshots; browser comparison                                                |
+| 7. Data reliability             | Grouped claims, source authority/corroboration/freshness, visible conflicts and uncertainty, withheld equal conflicts                        | core conflict/freshness tests; dossier reliability and sources                                                         |
+| 8. Action dashboard             | React daily focus, searchable paginated directory, dossier/evidence/changes/outreach/settings/research activity, done/dismiss/snooze/history | daily ranking/lifecycle unit tests; integration action completion; desktop/mobile browser workflows                    |
+| 9. Only five worthwhile actions | Configurable server-side limit, thresholds, one action per company, stable ordering, no padding, independent directory                       | core top-five/ties/snooze tests; browser change from five to three without shrinking directory                         |
+
+## Task-nine adaptation
+
+The company directory remains the broad research universe. The dashboard selects at most five qualifying recommendations instead of displaying every opportunity. `actionLimit` changes ranking output on the server; the browser merely renders the returned shortlist. Changing it to three yields three actions while the directory still contains all twelve demo companies. If only two companies qualify, it returns two.
+
+## Explicit boundaries
+
+The PDF allows technology and product decisions; it does not require paid enrichment, a third-party search index, n8n, OAuth, or sending messages. Those are not silently simulated. Live research is bounded public company-site research. Named people appear only when evidenced; otherwise the tool recommends an appropriate persona. Live provider accuracy and deployment acceptance require real credentials and a target hosting environment.
